@@ -1,5 +1,5 @@
 # Info Season Animes
-Scrapes informations from MyAnimeList for current season animes information.
+Scrapes informations from MyAnimeList for current season animes information
 
 ## What it does:
 
