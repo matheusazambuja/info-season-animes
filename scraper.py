@@ -2,156 +2,103 @@ import requests
 import re
 import json
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-from datetime import datetime, timedelta
-from selenium.common.exceptions import ElementNotVisibleException
-
-
-def format_titles(str_html):
-    regex_title_jap = r'<span class="dark_text">' + re.escape('Japanese:') + r'</span>\s(.+)'
-    str_title_jap = re.search(regex_title_jap, str_html).group(1).replace('Japanese: ', '')
-
-    regex_title = r'<span class="h1-title"><span itemprop="name">(.+)<br>'
-    match_title = re.search(regex_title, str_html)
-    if match_title:
-        str_title = match_title.group(1).strip()
-        str_title_eng = ''
-        regex_title_eng = r'<span class="title-english">(.+)</span></span></span>'
-        match_title_eng = re.search(regex_title_eng, str_html)
-        str_title_eng = match_title_eng.group(1).strip()
-    else:
-        regex_title = r'<span class="h1-title"><span itemprop="name">(.+)</span></span>'
-        match_title = re.search(regex_title, str_html)
-        str_title = match_title.group(1).strip()
-        regex_title_eng = r'<span class="dark_text">' + re.escape('English:') + r'</span>\s(.+)'
-        match_title_eng = re.search(regex_title_eng, str_html)
-        if match_title_eng:
-            str_title_eng = match_title_eng.group(1).strip()
-        else:
-            str_title_eng = ''
-
-    return [str_title, str_title_eng, str_title_jap]
-
-
-def info_dates(str_html, num_eps):
-    regex_date = r'<span class="dark_text">' + re.escape('Aired:') + r'</span>\s(.+)'
-    str_date = re.search(regex_date, str_html).group(1).strip()
-    list_info_date = [date.strip() for date in str_date.split('to')]
-
-    current_episode = None
-    date_next_episode = None
-    date_first_episode = None
-    date_last_episode = None
-
-    if re.match(r'\w{3} \d{1,2}, \d{4}', list_info_date[0]):
-        date_first_episode_obj = datetime.strptime(list_info_date[0], "%b %d, %Y")
-        date_first_episode_obj += timedelta(days=-1)
-        date_first_episode = date_first_episode_obj.strftime("%b %d, %Y")
-        if date_first_episode_obj - timedelta(days=1) > datetime.now():
-            if num_eps:  # if != None
-                for i in range(1, int(num_eps)):
-                    date_first_episode_obj += timedelta(days=7)
-                    if date_first_episode_obj < datetime.now():
-                        date_next_episode = date_first_episode_obj.strftime("%b %d, %Y")
-                        current_episode = i
-                date_last_episode = date_first_episode_obj.strftime("%b %d, %Y")
-            else:
-                date_first_episode = date_first_episode_obj.strftime("%b %d, %Y")
-        else:
-            date_last_episode = date_first_episode_obj.strftime("%b %d, %Y")
-    else:
-        date_first_episode = list_info_date[0]
-
-    return [current_episode, date_first_episode, date_next_episode,
-            date_last_episode]
-
-
-def get_data(str_html):
-    soup = BeautifulSoup(str_html, 'html.parser')
-
-    genres = [g.text for g in soup.find_all('span', attrs={'itemprop': 'genre'})]
-    match_description = soup.find('span', attrs={'itemprop': 'description'})
-    if match_description:
-        str_description = match_description.get_text()
-    else:
-        str_description = 'No synopsis information has been added to this title.'
-
-    regex_status = r'<span class="dark_text">' + re.escape('Status:') + r'</span>\s(.+)'
-    status = re.search(regex_status, str_html).group(1).strip()
-
-    regex_source = r'<span class="dark_text">Source:</span>\s+(.+)'
-    match_source = re.search(regex_source, str_html)
-    if match_source:
-        str_source = match_source.group(1).strip()
-    else:
-        str_source = 'Unknown'
-
-    regex_episodes = r'<span class="dark_text">' + re.escape('Episodes:') + r'</span>\s+(.+)'
-    episodes = re.search(regex_episodes, str_html).group(1)
-    if episodes == 'Unknown':
-        episodes = None
-
-    # Informations of dates and transmition
-    list_dates = info_dates(str_html, episodes)
-    if list_dates[2]:
-        list_dates[2] = str(list_dates[2])
-
-    list_titles = format_titles(str_html)
-
-    return {
-        'title': list_titles[0],
-        'title_english': list_titles[1],
-        'title_japanese': list_titles[-1],
-        'description': str_description,
-        'source': str_source,
-        'list_genres': genres,
-        'status': status,
-        'episodes': episodes,
-        'current_episode': list_dates[0],
-        'date_first_episode': list_dates[1],
-        'date_next_episode': list_dates[2],
-        'date_last_episode': list_dates[-1]
-    }
+from datetime import datetime
 
 
 # THERE ARE INFORMATIONS ONLY ACCESSIBLE VIA LOGIN
 # [Official_Site, Wikipedia, and more]
 
 if __name__ == '__main__':
-    URL = 'https://myanimelist.net/'
-    option = Options()
-    option.headless = True
+    URL = 'https://myanimelist.net/anime/season'
     seasonal_animes = []
 
-    driver = webdriver.Firefox(
-                executable_path=r'D:\Program Files\geckodriver\geckodriver.exe', options=option)
-    driver.get(URL)
-    driver.implicitly_wait(5)  # in seconds
+    r = requests.get(URL)
 
-    element_link = driver.find_element_by_css_selector('a[href*="season"]')
-    html_link = element_link.get_attribute('outerHTML')
+    soup = BeautifulSoup(r.text, 'html.parser')
+    season_anime = soup.find('div', attrs={
+        'class': 'seasonal-anime-list js-seasonal-anime-list js-seasonal-anime-list-key-1 clearfix'})
+    animes = season_anime.find_all('div', attrs={
+        'class': 'seasonal-anime js-seasonal-anime'})
 
-    link_seasonal = BeautifulSoup(html_link, 'html.parser').find('a')['href']
+    for anime in animes:
+        dict_anime = {}
+        dict_anime['title'] = anime.find('a', attrs={'class': 'link-title'}).get_text()
+        dict_anime['episodes'] = anime.find('div', attrs={'class': 'eps'}).get_text().strip()
+        if '?' in dict_anime['episodes']:
+            dict_anime['episodes'] = 'Unknown'
+        dict_anime['source'] = anime.find('span', attrs={'class': 'source'}).get_text().strip()
 
-    driver.get(link_seasonal)
-    try:
-        print('searching animes')
-        div_animes = driver.find_element_by_css_selector('div.js-seasonal-anime-list-key-1')
-        soup = BeautifulSoup(div_animes.get_attribute('innerHTML'), 'html.parser')
-        p_animes = soup.find_all('p', attrs={'class': 'title-text'})
-        for anime in p_animes:
-            link = anime.find('a')['href']
-            r = requests.get(link)
+        div_genres = anime.find('div', attrs={'class': 'genres js-genre'})
+        dict_anime['genres'] = [div.get_text()
+                                for div in div_genres.find_all('a')]
+        dict_anime['description'] = anime.find('div', attrs='synopsis js-synopsis').get_text().strip()
 
-            print(f'getting data of link: {link}')
-            seasonal_animes.append(get_data(r.text))
-            print(f'finished: {link}')
-            print('----------------------------------------------------------------')
-    except ElementNotVisibleException:
-        print('div_animes not found')
+        anime_link = anime.find('a', attrs={'class': 'link-title'})['href']
+        r_anime = requests.get(anime_link)
+        html_anime = r_anime.text
 
-    driver.quit()
+        title_jap = re.search(
+            r'<span class="dark_text">Japanese:</span>\s(.+)',
+            html_anime)
+        if title_jap:
+            dict_anime['title_jap'] = title_jap.group(1)
+        else:
+            dict_anime['title_jap'] = 'Unknown'
+
+        season = re.search(
+            r'<span class="dark_text">Premiered:</span>\s(.+)>(.+)</a>',
+            html_anime)
+        if season:
+            dict_anime['season'] = season.group(2)
+        else:
+            dict_anime['season'] = 'Unknown'
+
+        status = re.search(
+            r'<span class="dark_text">Status:</span>\s(.+)',
+            html_anime)
+        if status:
+            dict_anime['status'] = status.group(1)
+        else:
+            dict_anime['status'] = 'Unknown'
+
+        bcast = re.search(
+            r'<span class="dark_text">Broadcast:</span>\s(.+)',
+            html_anime
+        )
+        if bcast and bcast != 'Unknown':
+            list_bcast = bcast.group(1).strip().split(' ')
+            day = list(list_bcast[0])
+            day[-1] = ''
+            list_bcast[0] = ''.join(day)
+            dict_anime['broadcast'] = ' '.join(list_bcast)
+        else:
+            dict_anime['broadcast'] = 'Unknown'
+
+        str_date = re.search(
+            r'<span class="dark_text">Aired:</span>\s(.+)',
+            html_anime)
+        if str_date:
+            list_info_date = [date.strip() for date in str_date.group(1).strip().split('to')]
+
+            date_start = None
+            date_finished = None
+
+            if re.match(r'\w{3} \d{1,2}, \d{4}', list_info_date[0]):
+                date_start_obj = datetime.strptime(
+                    list_info_date[0],
+                    "%b %d, %Y")
+                date_start = date_start_obj.strftime("%b %d, %Y")
+
+                if list_info_date[1] != '?':
+                    date_finished = list_info_date[1].strftime("%b %d, %Y")
+
+            dict_anime['date_start'] = date_start
+            dict_anime['date_finished'] = date_finished
+        else:
+            dict_anime['date_start'] = None
+            dict_anime['date_finished'] = None
+
+        seasonal_animes.append(dict_anime)
 
     with open('seasonal_animes.json', 'w', encoding='utf-8') as jp:
         js = json.dumps(seasonal_animes, ensure_ascii=False)
