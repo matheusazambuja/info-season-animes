@@ -7,21 +7,22 @@ This software has a simple proposal: getting informations about the animes seaso
 
 The return is a JSON file:
 - Common Title (String)
-- English Title (String)
-- Japanese Title (String)
-- Description (String)
+- Episodes (Number)
 - Source (String)
 - Genres (List)
-- Currently Status (String)
-- Episodes (Number)
-- Current Episode (Number)
-- Date First Episode (String)
-- Date Next Episode (String)
-- Date Last Episode (String)
+- Description (String)
+- Japanese Title (String)
+- Season (String)
+- Status (String)
+- Broadcast (String)
+- Date Start (Date String)
+- Date Finished (Date String)
 
 OBS:
-- Date is formated as: 'Month Day, Year'
-Example: <Jun 21, 2020>
+- 'Date String' type is formated as: 'Month Day, Year'
+Example: <Jun 21, 2020> (in Japan)
+- Broadcast is fortmated as:
+Example: <Saturdays at 01:55 (JST)> (in Japan)
 
 ## Prerequisites
 
