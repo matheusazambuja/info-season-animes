@@ -29,7 +29,6 @@ Example: <Saturdays at 01:55 (JST)> (in Japan)
 What things you need to install the software and how to install them
 
 * Python 3.x
-* Geckodriver
 * Firefox
 * Some Python libraries following
 
@@ -37,16 +36,11 @@ What things you need to install the software and how to install them
 
 * **requests** - Requests is the only Non-GMO HTTP library for Python, safe for human consumption;
 * **beautfulsoup4** - Library for pulling data out of HTML and XML files;
-* **selenium** - An API to write functional/acceptance tests using Selenium WebDriver.
 
 With:
 ```
 pip install -r requirements.txt
 ```
-### Geckodrier
-
-[Find informatios for installion in the official repository.]
-(https://github.com/mozilla/geckodriver/releases)
 
 ## Running the code
 ```
